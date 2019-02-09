@@ -6,6 +6,9 @@ ignoreparts = ['PREP', 'CONJ', 'PRCL', 'INTJ']
 subject = ['NOUN', 'NUMR', 'NPRO']
 predicate = ['VERB', 'INFN', 'ADJS']
 
+def global_type(word):
+    return morph.parse(word)[0].tag.POS
+
 def part_of_speech(word):
     part = morph.parse(word)[0].tag.POS
     if part in ignoreparts:
@@ -30,7 +33,7 @@ def time(word):
         return 0
     elif time_ == 'futr':
         return 1
-    return -2
+    return None
 
 def face(word):
     face_ = morph.parse(word)[0].tag.persons
@@ -40,7 +43,7 @@ def face(word):
         return 2
     elif face_ == '3per':
         return 3
-    return 101010101001
+    return None
 
 def kind(word): # род
     kind_ = morph.parse(word)[0].tag.gender
@@ -48,13 +51,17 @@ def kind(word): # род
         return -1
     elif kind_ == 'masc':
         return 1
-    return 0
+    elif kind == 'neut':
+        return 0
+    return None
 
 def number(word):
-    number_ = morph.parse(word)[0].tag.NUMBERS
+    number_ = morph.parse(word)[0].tag.number
     if number_ == 'sing':
         return -1
-    return 1
+    elif number_ == 'plur':
+        return 1
+    return None
 
 #def is_normal(first, second):
     # first - род существительного, second - лицо глагола
@@ -95,30 +102,42 @@ def clean(text):
 
     now_predic = list(predic)
 
+    if len(now_subj) == 0:
+        return [now_predic, list(subj)]
+    if len(now_predic) == 0:
+        return now_subj
+
     basis = []
 
     for i in now_subj:
         for j in now_predic:
             if number(i) != number(j) and morph.parse(j)[0].tag.POS != 'INFN':
                 continue
-            if time(j) == -1 and kind(i) == kind(j):
+            elif time(j) == -1 and (kind(i) == kind(j) and global_type(i) != 'NPRO' or global_type(i) == 'NPRO'):
                 basis.append([i, j])
-            elif time(j) != -1:
+            elif time(j) != -1 and number(i) == number(j):
                 basis.append([i, j])
 
     return basis
 
 
 docs = [
+    "Я тихонечко ворчал в углу",
+    "Я делало делал делала уделали ворчал",
+    "Лисица прыгнула побежал поскакало улетели делает сделают нарисует",
+    "Сходив туда, прыгнул на шкаф",
 	"Британская полиция знает о местонахождении основателя WikiLeaks",
 	"В суде США начинается процесс против россиянина, рассылавшего спам",
 	"Церемонию вручения Нобелевской премии мира бойкотируют 19 стран",
 	"В Тамбове проходят массовые проверки газового оборудования",
-	"Украина игнорирует церемонию вручения Нобелевской премии",
+	"Планшет Lenovo Phab 3 получит экран диагональю 7,8 дюйма",
 	"Шведский суд отказался рассматривать апелляцию основателя Wikileaks",
 	"Вышло четвёртое издание «Книги Памяти»",
 	"Полиция Великобритании нашла основателя WikiLeaks, но, не арестовала",
-	"В Стокгольме и Осло сегодня состоится вручение Нобелевских премий"
+	"В Стокгольме и Осло сегодня состоится вручение Нобелевских премий",
+    "Названы 10 претендентов на титул лучшего в мире автомобиля",
+    "Возвращаясь домой, мне стало грустно",
+    "Книга была прочитана за считанные часы"
 ]
 
 
